@@ -87,7 +87,9 @@ impl DriveManager {
             .unwrap())
     }
 
-    pub async fn download_file(&self, url: &str) {
-        download::universal(self.hub.clone(), url).await;
+    pub async fn download_file(&self, url: &str) -> Result<Vec<String>> {
+        let response = download::universal(self.hub.clone(), url).await.unwrap();
+        let downloaded_files = response.lock().unwrap().clone();
+        Ok(downloaded_files)
     }
 }
