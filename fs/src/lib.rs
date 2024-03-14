@@ -3,6 +3,7 @@ use std::{fs, time::Instant};
 use anyhow::{Ok, Result};
 use google_drive3::{api::File, hyper::body::Bytes};
 
+pub mod archive;
 pub mod cache;
 pub mod compression;
 
@@ -13,6 +14,7 @@ pub struct FileManager {
     pub file_name: String,
     pub mime_type: String,
     pub ext: String,
+    pub compressed_file_path: String,
 }
 
 impl FileManager {
@@ -25,9 +27,11 @@ impl FileManager {
             file_name: Self::get_file_name(file, ext.clone()),
             mime_type,
             ext,
+            compressed_file_path: String::new(),
         }
     }
 
+    // Creates the file name with accurate extension
     fn get_file_name(file: File, ext: String) -> String {
         let name = file.name.clone().unwrap();
 
@@ -43,6 +47,7 @@ impl FileManager {
         return file_name_parts.join(".").to_string();
     }
 
+    // Calculates what should be the mime_type based on the documentation
     fn get_mime_type_and_ext(file: File) -> (String, String) {
         match file.mime_type.clone().unwrap().as_str() {
             "application/vnd.google-apps.spreadsheet" => (
@@ -72,10 +77,30 @@ impl FileManager {
         }
     }
 
+    // Returns the original target path of the file
     pub fn get_target_path(&self) -> String {
         format!("{}/{}", self.base_path, self.file_name)
     }
 
+    // Calculates what should be the location of the compressed files
+    pub fn get_compressed_target_path(&self) -> String {
+        let target_path = self.get_target_path();
+        let mut target_path_parts = target_path.split("/").collect::<Vec<_>>();
+        target_path_parts[1] = "compressed";
+
+        target_path_parts.join("/")
+    }
+
+    // Returns the compressed target path if exists or returns the actual target path
+    pub fn get_optimal_target_path(&self) -> String {
+        if self.compressed_file_path.is_empty() {
+            self.get_target_path()
+        } else {
+            self.compressed_file_path.clone()
+        }
+    }
+
+    // Checks the target path and the base path and returns the relative path
     pub fn get_relative_path(&self) -> String {
         let target_path = self.get_target_path();
         let base_path_parts = self.base_path.split("/").collect::<Vec<&str>>();
@@ -89,6 +114,7 @@ impl FileManager {
         return relative_path_parts.join("/");
     }
 
+    // Write file to fs
     pub async fn write_file(&self, content: Bytes) -> Result<()> {
         fs::create_dir_all(self.base_path.as_str()).unwrap();
         fs::write(self.get_target_path(), &content).unwrap();

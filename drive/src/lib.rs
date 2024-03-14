@@ -9,7 +9,7 @@ use drive::{
     oauth2::authenticator::Authenticator,
     DriveHub,
 };
-use fs::{compression::compress_v2, FileManager};
+use fs::{archive::archive_v2, compression::compress, FileManager};
 
 mod create;
 mod download;
@@ -60,8 +60,9 @@ impl DriveManager {
 
     pub async fn download_file(&self, url: &str) -> Result<Vec<FileManager>> {
         let response = download::universal(self.hub.clone(), url).await.unwrap();
-        let downloaded_files = response.lock().unwrap().clone();
-        compress_v2(downloaded_files.clone()).await;
+        let compressed_response = compress(response).await;
+        let downloaded_files = compressed_response.lock().unwrap().clone();
+        archive_v2(downloaded_files.clone()).await;
         Ok(downloaded_files)
     }
 }

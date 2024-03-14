@@ -16,6 +16,8 @@ async fn download_mormal_file(
     file_metadata: File,
     downloaded_files: Arc<Mutex<Vec<FileManager>>>,
 ) {
+    let file_manager = FileManager::new(file_metadata.clone(), "tmp/files".to_string());
+
     // Get the file contents
     let (response, _) = hub
         .files()
@@ -35,7 +37,6 @@ async fn download_mormal_file(
         );
 
     // Write to disk
-    let file_manager = FileManager::new(file_metadata, "tmp/files".to_string());
     let file_bytes = response.collect().await.unwrap().to_bytes();
     file_manager.write_file(file_bytes).await.unwrap();
 
@@ -185,7 +186,8 @@ pub async fn metadata(
     file_id: &str,
     custom_fields: Option<&str>,
 ) -> Result<File> {
-    let fields = custom_fields.unwrap_or("shortcutDetails, mimeType, name, id, fileExtension");
+    let fields = custom_fields
+        .unwrap_or("shortcutDetails, mimeType, name, id, fileExtension, headRevisionId");
     let (_, file_metadata) = hub
         .files()
         .get(file_id)

@@ -4,6 +4,9 @@ IAM.json
 OAuth.json
 tokencache.json
 
+tmp/compressed/*
+tmp/files/*
+
 .envrc
 
 .DS_Store
