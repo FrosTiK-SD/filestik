@@ -1,5 +1,6 @@
-use std::{fs, sync::Arc};
+use std::sync::Arc;
 
+use ::fs::FileManager;
 use anyhow::{Ok, Result};
 use async_recursion::async_recursion;
 use drive::{hyper_rustls::HttpsConnector, DriveHub};
@@ -32,26 +33,17 @@ async fn download_mormal_file(
         );
 
     // Write to disk
+    let file_manager = FileManager::new(file_metadata, "tmp".to_string());
     let file_bytes = response.collect().await.unwrap().to_bytes();
-    fs::write(file_metadata.name.clone().unwrap(), &file_bytes).expect("Cant write");
+    file_manager.write_file(file_bytes).await.unwrap();
 }
 
 async fn download_workspace_file(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     file_metadata: File,
 ) {
-    let new_mime_type = match file_metadata.mime_type.clone().unwrap().as_str() {
-        "application/vnd.google-apps.spreadsheet" => {
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        }
-        "application/vnd.google-apps.document" => "application/pdf",
-        "application/vnd.google-apps.presentation" => {
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        }
-        "application/vnd.google-apps.drawing" => "application/pdf",
-        "application/vnd.google-apps.script" => "application/vnd.google-apps.script+json",
-        _ => "",
-    };
+    let file_manager = FileManager::new(file_metadata.clone(), "tmp".to_string());
+    let new_mime_type = file_manager.mime_type.clone();
 
     if new_mime_type.is_empty() {
         println!("File format not currently supported by FilesTiK")
@@ -60,7 +52,10 @@ async fn download_workspace_file(
     // Get the file contents
     let response = hub
         .files()
-        .export(file_metadata.id.clone().unwrap().as_str(), new_mime_type)
+        .export(
+            file_metadata.id.clone().unwrap().as_str(),
+            new_mime_type.as_str(),
+        )
         .add_scope("https://www.googleapis.com/auth/drive.readonly")
         .param("alt", "media")
         .doit()
@@ -75,7 +70,7 @@ async fn download_workspace_file(
 
     // Write to disk
     let file_bytes = response.collect().await.unwrap().to_bytes();
-    fs::write(file_metadata.name.clone().unwrap(), &file_bytes).expect("Cant write");
+    file_manager.write_file(file_bytes).await.unwrap();
 }
 
 #[async_recursion]

@@ -1,5 +1,5 @@
 [package]
-name = "drive_manager"
+name = "fs"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,3 @@ serde = "^1.0"
 serde_json = "^1.0"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
-url = "2.5.0"
-futures = "0.3.30"
-async-recursion = "1.0.5"
-fs = {path = "../fs"}

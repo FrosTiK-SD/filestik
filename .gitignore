@@ -7,3 +7,5 @@ tokencache.json
 .envrc
 
 .DS_Store
+
+tmp
