@@ -4,6 +4,7 @@ use anyhow::{Ok, Result};
 use google_drive3::{api::File, hyper::body::Bytes};
 
 pub mod cache;
+pub mod compression;
 
 pub struct FileManager {
     pub file: File,

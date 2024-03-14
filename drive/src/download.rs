@@ -35,7 +35,7 @@ async fn download_mormal_file(
         );
 
     // Write to disk
-    let file_manager = FileManager::new(file_metadata, "tmp".to_string());
+    let file_manager = FileManager::new(file_metadata, "tmp/files".to_string());
     let file_bytes = response.collect().await.unwrap().to_bytes();
     file_manager.write_file(file_bytes).await.unwrap();
 
@@ -51,7 +51,7 @@ async fn download_workspace_file(
     file_metadata: File,
     downloaded_files: Arc<Mutex<Vec<String>>>,
 ) {
-    let file_manager = FileManager::new(file_metadata.clone(), "tmp".to_string());
+    let file_manager = FileManager::new(file_metadata.clone(), "tmp/files".to_string());
     let new_mime_type = file_manager.mime_type.clone();
 
     if new_mime_type.is_empty() {
