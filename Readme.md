@@ -11,6 +11,7 @@ When working with Google Drive APIs its very important to minimize the number of
 1. Rust Installed
 2. Cargo Installed
 3. GCP account
+4. GhostScript Installed
 
 ## Getting started
 
