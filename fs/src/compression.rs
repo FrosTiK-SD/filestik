@@ -4,9 +4,12 @@ use std::iter::Iterator;
 use zip::result::ZipError;
 use zip::write::FileOptions;
 
+use mtzip::ZipArchive;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
+
+use crate::FileManager;
 
 // REFERENCE -> https://github.com/zip-rs/zip/blob/master/examples/write_dir.rs
 
@@ -76,4 +79,18 @@ fn doit(
     zip_dir(&mut it.filter_map(|e| e.ok()), src_dir, file, method)?;
 
     Ok(())
+}
+
+pub async fn compress_v2(files: Vec<FileManager>) {
+    let zipper = ZipArchive::default();
+
+    for file in files {
+        zipper.add_file(
+            PathBuf::from(file.get_target_path()),
+            file.get_relative_path(),
+        );
+    }
+
+    let mut file = File::create("tmp/output.zip").unwrap();
+    zipper.write(&mut file);
 }

@@ -6,6 +6,7 @@ use google_drive3::{api::File, hyper::body::Bytes};
 pub mod cache;
 pub mod compression;
 
+#[derive(Clone, Debug)]
 pub struct FileManager {
     pub file: File,
     pub base_path: String,
@@ -73,6 +74,19 @@ impl FileManager {
 
     pub fn get_target_path(&self) -> String {
         format!("{}/{}", self.base_path, self.file_name)
+    }
+
+    pub fn get_relative_path(&self) -> String {
+        let target_path = self.get_target_path();
+        let base_path_parts = self.base_path.split("/").collect::<Vec<&str>>();
+        let target_path_parts = target_path.split("/").collect::<Vec<&str>>();
+
+        let mut relative_path_parts = Vec::new();
+        for path_idx in base_path_parts.len()..target_path_parts.len() {
+            relative_path_parts.push(target_path_parts[path_idx]);
+        }
+
+        return relative_path_parts.join("/");
     }
 
     pub async fn write_file(&self, content: Bytes) -> Result<()> {

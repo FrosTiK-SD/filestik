@@ -513,6 +513,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-queue"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-utils"
 version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -677,6 +686,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "google-drive3",
+ "mtzip",
  "serde",
  "serde_json",
  "tokio",
@@ -1171,6 +1181,17 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "mtzip"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca3b7584a136766f65b512e1f3fe784e9fda86f508167218b7aceb5cbb0037a3"
+dependencies = [
+ "cfg-if",
+ "crossbeam-queue",
+ "flate2",
 ]
 
 [[package]]

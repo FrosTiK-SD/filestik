@@ -22,7 +22,7 @@ async fn main() -> std::io::Result<()> {
         )
         .await.unwrap();
 
-    println!("--FINISHED_DOWNLOAD-- {:#?}", downloaded_files);
+    println!("--FINISHED_DOWNLOAD--");
 
     HttpServer::new(move || {
         App::new()

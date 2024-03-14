@@ -14,7 +14,7 @@ use crate::{link::Link, list::get_file_list};
 async fn download_mormal_file(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     file_metadata: File,
-    downloaded_files: Arc<Mutex<Vec<String>>>,
+    downloaded_files: Arc<Mutex<Vec<FileManager>>>,
 ) {
     // Get the file contents
     let (response, _) = hub
@@ -40,16 +40,13 @@ async fn download_mormal_file(
     file_manager.write_file(file_bytes).await.unwrap();
 
     // Append to log
-    downloaded_files
-        .lock()
-        .unwrap()
-        .push(file_manager.get_target_path());
+    downloaded_files.lock().unwrap().push(file_manager);
 }
 
 async fn download_workspace_file(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     file_metadata: File,
-    downloaded_files: Arc<Mutex<Vec<String>>>,
+    downloaded_files: Arc<Mutex<Vec<FileManager>>>,
 ) {
     let file_manager = FileManager::new(file_metadata.clone(), "tmp/files".to_string());
     let new_mime_type = file_manager.mime_type.clone();
@@ -82,10 +79,7 @@ async fn download_workspace_file(
     file_manager.write_file(file_bytes).await.unwrap();
 
     // Append to log
-    downloaded_files
-        .lock()
-        .unwrap()
-        .push(file_manager.get_target_path());
+    downloaded_files.lock().unwrap().push(file_manager);
 }
 
 #[async_recursion]
@@ -93,7 +87,7 @@ async fn download_folder(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     folder_id: String,
     page_token: Option<String>,
-    downloaded_files: Arc<Mutex<Vec<String>>>,
+    downloaded_files: Arc<Mutex<Vec<FileManager>>>,
 ) {
     let filter = format!("'{}' in parents and trashed=false", folder_id);
     let file_list = get_file_list(
@@ -126,7 +120,7 @@ async fn download_folder(
 async fn segregate_downloads(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     file_metadata: File,
-    downloaded_files: Arc<Mutex<Vec<String>>>,
+    downloaded_files: Arc<Mutex<Vec<FileManager>>>,
 ) {
     match file_metadata.mime_type.clone().unwrap() {
         // Handle folders
@@ -206,7 +200,7 @@ pub async fn metadata(
 pub async fn universal(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
     url: &str,
-) -> Result<Arc<Mutex<Vec<String>>>> {
+) -> Result<Arc<Mutex<Vec<FileManager>>>> {
     let link = Link::new(url.to_string());
     let downloaded_files = Arc::new(Mutex::new(Vec::new()));
 
