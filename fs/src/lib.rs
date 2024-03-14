@@ -3,6 +3,8 @@ use std::{fs, time::Instant};
 use anyhow::{Ok, Result};
 use google_drive3::{api::File, hyper::body::Bytes};
 
+pub mod cache;
+
 pub struct FileManager {
     pub file: File,
     pub base_path: String,

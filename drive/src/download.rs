@@ -9,7 +9,7 @@ use google_drive3::{api::File, hyper::body::HttpBody};
 
 use tokio::spawn;
 
-use crate::{list::get_file_list, Link};
+use crate::{link::Link, list::get_file_list};
 
 async fn download_mormal_file(
     hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
