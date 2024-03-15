@@ -16,11 +16,16 @@ async fn main() -> std::io::Result<()> {
     let drive_manager =
         DriveManager::new(cred_manager.connector.unwrap()).expect("Cant initialize drive manager");
 
-    let downloaded_files = drive_manager
+    drive_manager
         .download_file(
             "https://drive.google.com/drive/folders/1sVqdKiRPsET4RGBhUYv9S7pmpzYGNBMo?usp=drive_link",
         )
         .await.unwrap();
+    drive_manager
+    .download_file(
+        "https://drive.google.com/drive/folders/1sVqdKiRPsET4RGBhUYv9S7pmpzYGNBMo?usp=drive_link",
+    )
+    .await.unwrap();
 
     println!("--FINISHED_DOWNLOAD--");
 

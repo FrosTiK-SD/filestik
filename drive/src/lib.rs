@@ -1,5 +1,5 @@
 extern crate google_drive3 as drive;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::{Error, Ok, Result};
 use drive::{
@@ -20,7 +20,7 @@ mod list;
 #[derive(Clone)]
 pub struct DriveManager {
     pub hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
-    pub cache: CacheManager,
+    pub cache: Arc<CacheManager>,
 }
 
 impl DriveManager {
@@ -40,7 +40,7 @@ impl DriveManager {
 
         Ok(Self {
             hub,
-            cache: CacheManager::new(),
+            cache: Arc::new(CacheManager::new()),
         })
     }
 
@@ -64,11 +64,16 @@ impl DriveManager {
     }
 
     pub async fn download_file(&self, url: &str) -> Result<Vec<FileManager>> {
-        let response = download::universal(self.hub.clone(), url).await.unwrap();
+        let response = download::universal(Arc::new(self.clone()), url)
+            .await
+            .unwrap();
         let compressed_response = compress(response).await;
         let downloaded_files = compressed_response.lock().unwrap().clone();
         archive_v2(downloaded_files.clone()).await;
-        spawn(CacheManager::store_in_cache(downloaded_files.clone()));
+        spawn(CacheManager::cleanup_and_store_in_cache(
+            downloaded_files.clone(),
+            self.cache.clone(),
+        ));
         Ok(downloaded_files)
     }
 }

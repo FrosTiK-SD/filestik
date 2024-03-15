@@ -1,6 +1,11 @@
-use std::{fs, time::Instant};
+use std::{
+    fs,
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
 use anyhow::{Ok, Result};
+use cache::CacheManager;
 use google_drive3::{api::File, hyper::body::Bytes};
 
 pub mod archive;
@@ -23,10 +28,11 @@ pub struct FileManager {
     pub mime_type: String,
     pub ext: String,
     pub compressed_file_path: String,
+    pub cache_manager: Arc<CacheManager>,
 }
 
 impl FileManager {
-    pub fn new(file: File, base_path: String) -> Self {
+    pub fn new(file: File, cache_manager: Arc<CacheManager>, base_path: String) -> Self {
         let (mime_type, ext) = Self::get_mime_type_and_ext(file.clone());
 
         Self {
@@ -36,6 +42,7 @@ impl FileManager {
             mime_type,
             ext,
             compressed_file_path: String::new(),
+            cache_manager,
         }
     }
 
@@ -126,7 +133,19 @@ impl FileManager {
     pub async fn write_file(&self, content: Bytes) -> Result<()> {
         fs::create_dir_all(self.base_path.as_str()).unwrap();
         fs::write(self.get_target_path(), &content).unwrap();
-        println!("{:#?} | {:#?}", Instant::now(), self.get_target_path());
+        println!(
+            "{:#?} | {:#?} | {:#?}",
+            Instant::now(),
+            self.get_target_path(),
+            self.cache_manager
+        );
         Ok(())
+    }
+
+    pub fn get_file_revision_id(&self) -> String {
+        self.file
+            .head_revision_id
+            .clone()
+            .unwrap_or("_".to_string())
     }
 }

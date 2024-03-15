@@ -13,6 +13,7 @@ pub async fn compress(files: Arc<Mutex<Vec<FileManager>>>) -> Arc<Mutex<Vec<File
                 let output_path = file.get_compressed_target_path();
                 let error = gs_command(file.get_optimal_target_path(), output_path.clone()).spawn();
                 if error.is_ok() {
+                    error.unwrap().wait().unwrap();
                     files
                         .lock()
                         .unwrap()
