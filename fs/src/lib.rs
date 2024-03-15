@@ -7,6 +7,14 @@ pub mod archive;
 pub mod cache;
 pub mod compression;
 
+pub static CACHE_KEY_STORE_PATH: &str = "tmp/.cache/keyStore.csv";
+pub static CACHE_FILES_PATH: &str = "tmp/.cache/files";
+pub static TMP_BASE_PATH: &str = "tmp";
+pub static TMP_FILES_UNCOMPRESSED_BASE_PATH: &str = "tmp/files";
+pub static TMP_FILES_COMPRESSED_BASE_PATH: &str = "tmp/compressed";
+pub static TMP_FILES_OUTPUT_BASE_PATH: &str = "tmp/output";
+pub static TMP_CACHE_PATH: &str = "tmp/.cache";
+
 #[derive(Clone, Debug)]
 pub struct FileManager {
     pub file: File,

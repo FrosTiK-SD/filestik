@@ -9,7 +9,8 @@ use drive::{
     oauth2::authenticator::Authenticator,
     DriveHub,
 };
-use fs::{archive::archive_v2, compression::compress, FileManager};
+use fs::{archive::archive_v2, cache::CacheManager, compression::compress, FileManager};
+use tokio::spawn;
 
 mod create;
 mod download;
@@ -19,6 +20,7 @@ mod list;
 #[derive(Clone)]
 pub struct DriveManager {
     pub hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
+    pub cache: CacheManager,
 }
 
 impl DriveManager {
@@ -36,7 +38,10 @@ impl DriveManager {
             connector,
         ));
 
-        Ok(Self { hub })
+        Ok(Self {
+            hub,
+            cache: CacheManager::new(),
+        })
     }
 
     pub async fn get_file_list(
@@ -63,6 +68,7 @@ impl DriveManager {
         let compressed_response = compress(response).await;
         let downloaded_files = compressed_response.lock().unwrap().clone();
         archive_v2(downloaded_files.clone()).await;
+        spawn(CacheManager::store_in_cache(downloaded_files.clone()));
         Ok(downloaded_files)
     }
 }

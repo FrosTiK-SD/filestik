@@ -1,8 +1,4 @@
-use std::{
-    fs,
-    os::unix::process::CommandExt,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use pdfshrink::gs_command;
 
