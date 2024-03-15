@@ -1,5 +1,5 @@
 extern crate google_drive3 as drive;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::{Error, Ok, Result};
 use drive::{

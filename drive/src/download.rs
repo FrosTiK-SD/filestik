@@ -22,31 +22,35 @@ async fn download_mormal_file(
         "tmp/files".to_string(),
     );
 
-    // Get the file contents
-    let (response, _) = drive
-        .hub
-        .clone()
-        .files()
-        .get(file_metadata.id.clone().unwrap().as_str())
-        .add_scope("https://www.googleapis.com/auth/drive.readonly")
-        .param("alt", "media")
-        .supports_all_drives(true)
-        .acknowledge_abuse(true)
-        .doit()
-        .await
-        .expect(
-            format!(
-                "{} | Unable to download",
-                file_metadata.name.clone().unwrap()
-            )
-            .as_str(),
-        );
+    // Download if not already cached
+    if !file_manager.is_cached.clone() {
+        // Get the file contents
+        let (response, _) = drive
+            .hub
+            .clone()
+            .files()
+            .get(file_metadata.id.clone().unwrap().as_str())
+            .add_scope("https://www.googleapis.com/auth/drive.readonly")
+            .param("alt", "media")
+            .supports_all_drives(true)
+            .acknowledge_abuse(true)
+            .doit()
+            .await
+            .expect(
+                format!(
+                    "{} | Unable to download",
+                    file_metadata.name.clone().unwrap()
+                )
+                .as_str(),
+            );
 
-    // Write to disk
-    let file_bytes = response.collect().await.unwrap().to_bytes();
-    file_manager.write_file(file_bytes).await.unwrap();
+        // Write to disk
+        let file_bytes = response.collect().await.unwrap().to_bytes();
+        file_manager.write_file(file_bytes).await.unwrap();
+        println!("DOWNLOADED FILE - {:#?}", file_metadata.id.unwrap());
+    }
 
-    // Append to log
+    // Append to list of downloaded files
     downloaded_files.lock().unwrap().push(file_manager);
 }
 
@@ -60,38 +64,43 @@ async fn download_workspace_file(
         drive.cache.clone(),
         "tmp/files".to_string(),
     );
-    let new_mime_type = file_manager.mime_type.clone();
 
-    if new_mime_type.is_empty() {
-        println!("File format not currently supported by FilesTiK")
+    // Only download if not already cached
+    if !file_manager.is_cached.clone() {
+        let new_mime_type = file_manager.mime_type.clone();
+
+        if new_mime_type.is_empty() {
+            println!("File format not currently supported by FilesTiK")
+        }
+
+        // Get the file contents
+        let response = drive
+            .hub
+            .clone()
+            .files()
+            .export(
+                file_metadata.id.clone().unwrap().as_str(),
+                new_mime_type.as_str(),
+            )
+            .add_scope("https://www.googleapis.com/auth/drive.readonly")
+            .param("alt", "media")
+            .doit()
+            .await
+            .expect(
+                format!(
+                    "{} | Unable to download",
+                    file_metadata.name.clone().unwrap()
+                )
+                .as_str(),
+            );
+
+        // Write to disk
+        let file_bytes = response.collect().await.unwrap().to_bytes();
+        file_manager.write_file(file_bytes).await.unwrap();
+        println!("DOWNLOADED FILE - {:#?}", file_metadata.id.unwrap());
     }
 
-    // Get the file contents
-    let response = drive
-        .hub
-        .clone()
-        .files()
-        .export(
-            file_metadata.id.clone().unwrap().as_str(),
-            new_mime_type.as_str(),
-        )
-        .add_scope("https://www.googleapis.com/auth/drive.readonly")
-        .param("alt", "media")
-        .doit()
-        .await
-        .expect(
-            format!(
-                "{} | Unable to download",
-                file_metadata.name.clone().unwrap()
-            )
-            .as_str(),
-        );
-
-    // Write to disk
-    let file_bytes = response.collect().await.unwrap().to_bytes();
-    file_manager.write_file(file_bytes).await.unwrap();
-
-    // Append to log
+    // Append to list of downloaded files
     downloaded_files.lock().unwrap().push(file_manager);
 }
 

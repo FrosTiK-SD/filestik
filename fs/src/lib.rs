@@ -1,8 +1,4 @@
-use std::{
-    fs,
-    sync::{Arc, Mutex},
-    time::Instant,
-};
+use std::{fs, sync::Arc};
 
 use anyhow::{Ok, Result};
 use cache::CacheManager;
@@ -29,21 +25,49 @@ pub struct FileManager {
     pub ext: String,
     pub compressed_file_path: String,
     pub cache_manager: Arc<CacheManager>,
+    pub cached_path: String,
+    pub is_cached: bool,
 }
 
 impl FileManager {
     pub fn new(file: File, cache_manager: Arc<CacheManager>, base_path: String) -> Self {
         let (mime_type, ext) = Self::get_mime_type_and_ext(file.clone());
 
-        Self {
+        let mut file_manager = Self {
             file: file.clone(),
             base_path,
-            file_name: Self::get_file_name(file, ext.clone()),
+            file_name: Self::get_file_name(file.clone(), ext.clone()),
             mime_type,
             ext,
             compressed_file_path: String::new(),
             cache_manager,
+            is_cached: false,
+            cached_path: String::new(),
+        };
+
+        file_manager.sync_cache(file);
+
+        file_manager
+    }
+
+    fn sync_cache(&mut self, file: File) {
+        let revision_map = self.cache_manager.store.get(file.id.unwrap().as_str());
+        if revision_map.is_none() {
+            return;
         }
+
+        let rm_unwrap = revision_map.unwrap();
+        let default_val = String::from("");
+        let cached_file_path = rm_unwrap
+            .get(self.get_file_revision_id().as_str())
+            .unwrap_or(&default_val);
+
+        if !cached_file_path.is_empty() {
+            self.cached_path = cached_file_path.to_string();
+            self.is_cached = true
+        }
+
+        return;
     }
 
     // Creates the file name with accurate extension
@@ -109,7 +133,11 @@ impl FileManager {
     // Returns the compressed target path if exists or returns the actual target path
     pub fn get_optimal_target_path(&self) -> String {
         if self.compressed_file_path.is_empty() {
-            self.get_target_path()
+            if self.is_cached {
+                self.cached_path.clone()
+            } else {
+                self.get_target_path()
+            }
         } else {
             self.compressed_file_path.clone()
         }
@@ -133,12 +161,6 @@ impl FileManager {
     pub async fn write_file(&self, content: Bytes) -> Result<()> {
         fs::create_dir_all(self.base_path.as_str()).unwrap();
         fs::write(self.get_target_path(), &content).unwrap();
-        println!(
-            "{:#?} | {:#?} | {:#?}",
-            Instant::now(),
-            self.get_target_path(),
-            self.cache_manager
-        );
         Ok(())
     }
 

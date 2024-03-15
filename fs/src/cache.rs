@@ -1,12 +1,11 @@
 use csv::{ReaderBuilder, StringRecord, Writer};
 use dashmap::DashMap;
 use std::{
-    borrow::BorrowMut,
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::Write,
     path::Path,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use crate::{
@@ -136,7 +135,9 @@ impl CacheManager {
             }
 
             // Cleanup
-            fs::remove_file(fm.get_target_path()).unwrap();
+            if Path::new(fm.get_target_path().as_str()).exists() {
+                fs::remove_file(fm.get_target_path()).unwrap();
+            }
             if !fm.compressed_file_path.clone().is_empty() {
                 fs::remove_file(fm.get_compressed_target_path()).unwrap();
             }
