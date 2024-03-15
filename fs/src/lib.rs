@@ -1,7 +1,11 @@
-use std::{fs, sync::Arc};
+use std::{
+    fs,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::{Ok, Result};
 use cache::CacheManager;
+use compression::compress;
 use google_drive3::{api::File, hyper::body::Bytes};
 
 pub mod archive;
@@ -161,6 +165,7 @@ impl FileManager {
     pub async fn write_file(&self, content: Bytes) -> Result<()> {
         fs::create_dir_all(self.base_path.as_str()).unwrap();
         fs::write(self.get_target_path(), &content).unwrap();
+        compress(Arc::new(Mutex::new(vec![self.clone()]))).await;
         Ok(())
     }
 

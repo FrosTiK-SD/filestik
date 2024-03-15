@@ -67,8 +67,8 @@ impl DriveManager {
         let response = download::universal(Arc::new(self.clone()), url)
             .await
             .unwrap();
-        let compressed_response = compress(response).await;
-        let downloaded_files = compressed_response.lock().unwrap().clone();
+        // let compressed_response = compress(response).await;
+        let downloaded_files = response.lock().unwrap().clone();
         archive_v2(downloaded_files.clone()).await;
         spawn(CacheManager::cleanup_and_store_in_cache(
             downloaded_files.clone(),
