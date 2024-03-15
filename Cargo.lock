@@ -772,6 +772,7 @@ dependencies = [
  "chrono",
  "csv",
  "dashmap",
+ "futures",
  "google-drive3",
  "mtzip",
  "pdfshrink",

@@ -99,19 +99,10 @@ impl CacheManager {
         for fm in fm_list {
             let cache_file_path = Self::get_cache_file_path(fm.clone());
 
-            // Update fs even if older data is received
-            fs::copy(fm.get_optimal_target_path(), cache_file_path.clone()).unwrap();
+            // Update only if not already cached
+            if !fm.is_cached {
+                fs::copy(fm.get_optimal_target_path(), cache_file_path.clone()).unwrap();
 
-            // Update cache state if new data is received
-            let revision_map = cache_manager
-                .store
-                .get(fm.file.id.clone().unwrap().as_str());
-
-            if revision_map.is_none()
-                || !revision_map
-                    .unwrap()
-                    .contains_key(fm.get_file_revision_id().as_str())
-            {
                 wtr.write_record(&[
                     fm.file.id.clone().unwrap(),
                     fm.get_file_revision_id().clone(),
