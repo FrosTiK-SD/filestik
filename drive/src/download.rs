@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use ::fs::FileManager;
 use anyhow::{Ok, Result};
 use async_recursion::async_recursion;
-use drive::{hyper_rustls::HttpsConnector, DriveHub};
+use fs::cache::RedisRequest;
 use futures::future::join_all;
 use google_drive3::{api::File, hyper::body::HttpBody};
 
@@ -113,7 +113,7 @@ async fn download_folder(
 ) {
     let filter = format!("'{}' in parents and trashed=false", folder_id);
     let file_list = get_file_list(
-        drive.hub.clone(),
+        drive.clone(),
         Some(filter.as_str()),
         Some(page_token.unwrap_or_default().as_str()),
         None,
@@ -167,7 +167,7 @@ async fn segregate_downloads(
         // Handle shortcuts
         mime_type if mime_type == "application/vnd.google-apps.shortcut" => {
             let original_file = metadata(
-                drive.hub.clone(),
+                drive.clone(),
                 file_metadata
                     .shortcut_details
                     .unwrap()
@@ -209,19 +209,49 @@ async fn segregate_downloads(
 }
 
 pub async fn metadata(
-    hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
+    drive: Arc<DriveManager>,
     file_id: &str,
     custom_fields: Option<&str>,
 ) -> Result<File> {
+    let cache_key = DriveManager::get_call_hash(
+        "file.get",
+        String::new(),
+        String::new(),
+        custom_fields.unwrap_or("").to_string(),
+    );
+    let redis_response = drive
+        .cache
+        .lock()
+        .unwrap()
+        .get_from_redis::<RedisRequest<File>>(cache_key.clone());
+
+    if redis_response.is_ok() {
+        let file_metadata = redis_response.unwrap().data;
+        return Ok(file_metadata);
+    }
+
+    if redis_response.is_ok() {
+        let file_list = redis_response.unwrap().data;
+        return Ok(file_list);
+    }
+
     let fields = custom_fields
         .unwrap_or("shortcutDetails, mimeType, name, id, fileExtension, headRevisionId");
-    let (_, file_metadata) = hub
+    let (_, file_metadata) = drive
+        .hub
         .files()
         .get(file_id)
         .param("fields", fields)
         .doit()
         .await
         .unwrap();
+
+    drive.cache.lock().unwrap().set_to_redis(
+        cache_key.clone(),
+        RedisRequest {
+            data: file_metadata.clone(),
+        },
+    );
 
     Ok(file_metadata)
 }
@@ -234,7 +264,7 @@ pub async fn universal(
     let downloaded_files = Arc::new(Mutex::new(Vec::new()));
 
     // Get the metadata
-    let file_metadata = metadata(drive.hub.clone(), &link.id, None).await.unwrap();
+    let file_metadata = metadata(drive.clone(), &link.id, None).await.unwrap();
 
     segregate_downloads(drive.clone(), file_metadata, downloaded_files.clone()).await;
 

@@ -20,7 +20,7 @@ pub static TMP_FILES_COMPRESSED_BASE_PATH: &str = "tmp/compressed";
 pub static TMP_FILES_OUTPUT_BASE_PATH: &str = "tmp/output";
 pub static TMP_CACHE_PATH: &str = "tmp/.cache";
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct FileManager {
     pub file: File,
     pub base_path: String,
@@ -28,13 +28,13 @@ pub struct FileManager {
     pub mime_type: String,
     pub ext: String,
     pub compressed_file_path: String,
-    pub cache_manager: Arc<CacheManager>,
+    pub cache_manager: Arc<Mutex<CacheManager>>,
     pub cached_path: String,
     pub is_cached: bool,
 }
 
 impl FileManager {
-    pub fn new(file: File, cache_manager: Arc<CacheManager>, base_path: String) -> Self {
+    pub fn new(file: File, cache_manager: Arc<Mutex<CacheManager>>, base_path: String) -> Self {
         let (mime_type, ext) = Self::get_mime_type_and_ext(file.clone());
 
         let mut file_manager = Self {
@@ -55,7 +55,8 @@ impl FileManager {
     }
 
     fn sync_cache(&mut self, file: File) {
-        let revision_map = self.cache_manager.store.get(file.id.unwrap().as_str());
+        let cache_manager = self.cache_manager.lock().unwrap();
+        let revision_map = cache_manager.store.get(file.id.unwrap().as_str());
         if revision_map.is_none() {
             return;
         }

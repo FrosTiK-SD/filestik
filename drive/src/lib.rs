@@ -1,5 +1,5 @@
 extern crate google_drive3 as drive;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::{Error, Ok, Result};
 use drive::{
@@ -9,7 +9,7 @@ use drive::{
     oauth2::authenticator::Authenticator,
     DriveHub,
 };
-use fs::{archive::archive_v2, cache::CacheManager, compression::compress, FileManager};
+use fs::{archive::archive_v2, cache::CacheManager, FileManager};
 use tokio::spawn;
 
 mod create;
@@ -20,7 +20,7 @@ mod list;
 #[derive(Clone)]
 pub struct DriveManager {
     pub hub: Arc<DriveHub<HttpsConnector<drive::hyper::client::HttpConnector>>>,
-    pub cache: Arc<CacheManager>,
+    pub cache: Arc<Mutex<CacheManager>>,
 }
 
 impl DriveManager {
@@ -40,7 +40,7 @@ impl DriveManager {
 
         Ok(Self {
             hub,
-            cache: Arc::new(CacheManager::new()),
+            cache: Arc::new(Mutex::new(CacheManager::new())),
         })
     }
 
@@ -51,7 +51,7 @@ impl DriveManager {
         custom_fields: Option<&str>,
     ) -> Result<FileList, Error> {
         Ok(
-            list::get_file_list(self.hub.clone(), query, page_token, custom_fields)
+            list::get_file_list(Arc::new(self.clone()), query, page_token, custom_fields)
                 .await
                 .unwrap(),
         )
@@ -67,7 +67,6 @@ impl DriveManager {
         let response = download::universal(Arc::new(self.clone()), url)
             .await
             .unwrap();
-        // let compressed_response = compress(response).await;
         let downloaded_files = response.lock().unwrap().clone();
         archive_v2(downloaded_files.clone()).await;
         spawn(CacheManager::cleanup_and_store_in_cache(
@@ -75,5 +74,20 @@ impl DriveManager {
             self.cache.clone(),
         ));
         Ok(downloaded_files)
+    }
+
+    pub fn get_call_hash(
+        call_type: &str,
+        query: String,
+        page_token: String,
+        custom_fields: String,
+    ) -> String {
+        format!(
+            "filesSTiK | {} | {} | {} | {}",
+            call_type.to_string(),
+            query,
+            page_token,
+            custom_fields
+        )
     }
 }

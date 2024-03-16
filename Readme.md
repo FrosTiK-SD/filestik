@@ -12,6 +12,7 @@ When working with Google Drive APIs its very important to minimize the number of
 2. Cargo Installed
 3. GCP account
 4. GhostScript Installed
+5. Redis
 
 ## Getting started
 
@@ -45,7 +46,8 @@ export OAUTH_CREDENTIALS='{
 Also note that `http://127.0.0.1:61684` should be whitelisted by the `OAuth client` in the `redirect_uris` in order to authorize the app
 :::
 
-3. Thats it. Now just run
+5. Start the redis server and set your redis uri to `REDIS_URI` otherwise default to `redis://localhost:6379"` will be used.
+6. Thats it. Now just run
 
 ```
 cargo run

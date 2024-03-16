@@ -32,7 +32,10 @@ async fn main() -> std::io::Result<()> {
     let end_time = Utc::now().time();
     let diff = end_time - start_time;
 
-    println!("--FINISHED_DOWNLOAD-- in {:?} secs", diff.num_seconds());
+    println!(
+        "--FINISHED_DOWNLOAD-- in {:?} secs",
+        diff.num_milliseconds()
+    );
 
     HttpServer::new(move || {
         App::new()

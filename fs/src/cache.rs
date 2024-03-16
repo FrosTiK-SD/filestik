@@ -1,11 +1,15 @@
 use csv::{ReaderBuilder, StringRecord, Writer};
 use dashmap::DashMap;
+use redis::{Commands, Connection, FromRedisValue, RedisError, ToRedisArgs};
+use redis_macros::{FromRedisValue, ToRedisArgs};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
+    env,
     fs::{self, File, OpenOptions},
     io::Write,
     path::Path,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use crate::{
@@ -13,21 +17,48 @@ use crate::{
     TMP_FILES_COMPRESSED_BASE_PATH, TMP_FILES_OUTPUT_BASE_PATH, TMP_FILES_UNCOMPRESSED_BASE_PATH,
 };
 
-#[derive(Debug, Clone)]
+use derive_more::From;
+
+#[derive(Default, Serialize, Deserialize, From, FromRedisValue, ToRedisArgs)]
+pub struct RedisRequest<T> {
+    pub data: T,
+}
+
+#[derive()]
 pub struct CacheManager {
     // HashMap<FileID -> RevisionID -> Path>
     pub store: DashMap<String, HashMap<String, String>>,
+    pub redis: Connection,
 }
 
 impl CacheManager {
     pub fn new() -> Self {
         Self::run_fs_checks();
+        let redis_uri = env::var("REDIS_URI").unwrap_or(String::from("redis://localhost:6379"));
+        let redis = redis::Client::open(redis_uri)
+            .unwrap()
+            .get_connection()
+            .unwrap();
+
         let mut cache_manager = Self {
             store: DashMap::new(),
+            redis,
         };
 
         cache_manager.initialize();
         cache_manager
+    }
+
+    pub fn set_to_redis<T: ToRedisArgs>(&mut self, key: String, value: T) {
+        self.redis.set::<String, T, String>(key, value).unwrap();
+    }
+
+    pub fn get_from_redis<T: FromRedisValue + Default>(
+        &mut self,
+        key: String,
+    ) -> Result<T, RedisError> {
+        let redis_response: Result<T, RedisError> = self.redis.get(key);
+        return redis_response;
     }
 
     pub fn run_fs_checks() {
@@ -87,7 +118,7 @@ impl CacheManager {
 
     pub async fn cleanup_and_store_in_cache(
         fm_list: Vec<FileManager>,
-        cache_manager: Arc<CacheManager>,
+        cache_manager: Arc<Mutex<CacheManager>>,
     ) {
         let file = OpenOptions::new()
             .write(true)
@@ -114,6 +145,8 @@ impl CacheManager {
 
                 // Update in-memory
                 cache_manager
+                    .lock()
+                    .unwrap()
                     .store
                     .entry(fm.file.id.clone().unwrap())
                     .and_modify(|revision_map| {
