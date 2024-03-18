@@ -235,8 +235,9 @@ pub async fn metadata(
         return Ok(file_list);
     }
 
-    let fields = custom_fields
-        .unwrap_or("shortcutDetails, mimeType, name, id, fileExtension, headRevisionId");
+    let fields = custom_fields.unwrap_or(
+        "shortcutDetails, mimeType, name, id, fileExtension, headRevisionId, webViewLink",
+    );
     let (_, file_metadata) = drive
         .hub
         .files()

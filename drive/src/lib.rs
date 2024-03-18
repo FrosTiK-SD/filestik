@@ -10,12 +10,16 @@ use drive::{
     DriveHub,
 };
 use fs::{archive::archive_v2, cache::CacheManager, FileManager};
+use interface::CreateFileStruct;
 use tokio::spawn;
+use upload::upload_batch;
 
-mod create;
-mod download;
+pub mod create;
+pub mod download;
+pub mod interface;
 pub mod link;
-mod list;
+pub mod list;
+pub mod upload;
 
 #[derive(Clone)]
 pub struct DriveManager {
@@ -55,6 +59,13 @@ impl DriveManager {
                 .await
                 .unwrap(),
         )
+    }
+
+    pub async fn upload_files(
+        &self,
+        upload_files_req: Vec<CreateFileStruct>,
+    ) -> Result<Vec<Option<String>>> {
+        upload_batch(Arc::new(self.clone()), upload_files_req).await
     }
 
     pub async fn create_shortcut(&self, file_id: String, parent_id: String) -> Result<File, Error> {

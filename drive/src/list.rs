@@ -16,7 +16,7 @@ pub async fn get_file_list(
         query.unwrap_or_default(),
         page_token.unwrap_or_default(),
         custom_fields.unwrap_or(
-            "files/shortcutDetails, files/mimeType, files/name, files/id, files/fileExtension, files/headRevisionId, nextPageToken",
+            "files/shortcutDetails, files/mimeType, files/name, files/id, files/fileExtension, files/headRevisionId, files/webViewLink, nextPageToken",
         ),
     );
 
