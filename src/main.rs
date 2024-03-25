@@ -21,7 +21,11 @@ use actix_web::{
     App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use drive::chrono::Utc;
-use drive_manager::{interface::CreateFileStruct, DriveManager};
+use drive_manager::{
+    interface::CreateFileStruct,
+    link::{self, Link},
+    DriveManager,
+};
 use oauth::OAuthCredentialManager;
 use serde::Serialize;
 use tracing::{event, Level};
@@ -32,6 +36,8 @@ struct UploadForm {
     parents: Vec<Text<String>>,
     #[multipart(rename = "file")]
     files: Vec<TempFile>,
+    #[multipart(rename = "link")]
+    links: Vec<Text<String>>,
 }
 
 #[derive(Serialize)]
@@ -78,7 +84,7 @@ async fn upload(
         parents.push(parent.to_string());
     }
 
-    for file in form.files {
+    for (idx, file) in form.files.iter().enumerate() {
         let content = file.file.as_file().try_clone().unwrap();
         let file_path = file.file_name.clone().unwrap_or_default();
         let file_path_clone = file_path.clone();
@@ -88,12 +94,18 @@ async fn upload(
         } else {
             None
         };
+        let file_id = if form.links.get(idx).is_some() {
+            Some(Link::new(form.links.get(idx).clone().unwrap().to_string()).id)
+        } else {
+            None
+        };
 
         file_paths.push(CreateFileStruct {
             file_path,
             name: file.file_name.clone().unwrap(),
             mime_type: file.content_type.clone(),
             ext,
+            file_id,
             parents: parents.clone(),
             content,
         });

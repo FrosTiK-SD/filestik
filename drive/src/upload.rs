@@ -23,16 +23,32 @@ pub async fn upload_file(
         ..File::default()
     };
 
-    let (_, file) = drive
-        .hub
-        .files()
-        .create(file)
-        .supports_all_drives(true)
-        .param("fields", "webViewLink, id")
-        .ocr_language("en")
-        .upload(upload_file.content, upload_file.mime_type.unwrap())
-        .await
-        .unwrap();
+    let (_, file) = if upload_file.file_id.clone().is_none() {
+        println!("UPLOADING");
+        drive
+            .hub
+            .files()
+            .create(file)
+            .supports_all_drives(true)
+            .param("fields", "webViewLink, id")
+            .ocr_language("en")
+            .upload(upload_file.content, upload_file.mime_type.unwrap())
+            .await
+            .unwrap()
+    } else {
+        println!("UPDATING");
+        drive
+            .hub
+            .files()
+            .update(file, upload_file.file_id.clone().unwrap().as_str())
+            .supports_all_drives(true)
+            .param("fields", "webViewLink, id")
+            .param("newRevision", "true")
+            .ocr_language("en")
+            .upload(upload_file.content, upload_file.mime_type.unwrap())
+            .await
+            .unwrap()
+    };
 
     // Create permissions for view access
     drive

@@ -9,4 +9,5 @@ pub struct CreateFileStruct {
     pub mime_type: Option<Mime>,
     pub parents: Vec<String>,
     pub content: File,
+    pub file_id: Option<String>,
 }
