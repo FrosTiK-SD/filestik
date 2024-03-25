@@ -10,6 +10,7 @@ use drive::{
     DriveHub,
 };
 use fs::{archive::archive_v2, cache::CacheManager, FileManager};
+use futures::future::join_all;
 use interface::CreateFileStruct;
 use tokio::spawn;
 use upload::upload_batch;

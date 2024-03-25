@@ -20,7 +20,7 @@ use actix_web::{
     web::{Data, Json},
     App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
-use drive::chrono::Utc;
+use drive::{chrono::Utc, hyper::StatusCode};
 use drive_manager::{
     interface::CreateFileStruct,
     link::{self, Link},
@@ -49,9 +49,14 @@ struct UploadResponse {
 #[get("/download")]
 async fn download(req: HttpRequest, drive_manager: Data<DriveManager>) -> Result<HttpResponse> {
     let start_time = Utc::now().time();
+    let link = req.headers().get("link");
+
+    if link.is_none() {
+        return Ok((HttpResponse::new(StatusCode::BAD_REQUEST)));
+    }
 
     drive_manager
-        .download_file("https://drive.google.com/drive/folders/1LeKGGNtD8ZOmKi2bfRh0uJltS5B-wq-z")
+        .download_file(link.unwrap().to_str().unwrap())
         .await
         .unwrap();
 
