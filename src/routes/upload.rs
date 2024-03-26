@@ -2,7 +2,7 @@ use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 use actix_web::{
     post,
     web::{Data, Json},
-    HttpRequest, Responder, Result,
+    Responder, Result,
 };
 use drive_manager::{interface::CreateFileStruct, link::Link, DriveManager};
 use serde::Serialize;
@@ -25,7 +25,6 @@ struct UploadResponse {
 
 #[post("/upload")]
 pub async fn upload(
-    req: HttpRequest,
     drive_manager: Data<DriveManager>,
     MultipartForm(form): MultipartForm<UploadForm>,
 ) -> Result<impl Responder> {

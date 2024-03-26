@@ -2,7 +2,7 @@ extern crate google_drive3 as drive;
 
 mod oauth;
 
-use crate::routes::{download::download, upload::upload};
+use crate::routes::{download::download, shortcut::create_shortcut, upload::upload};
 use actix_web::{middleware, web::Data, App, HttpServer};
 use drive_manager::DriveManager;
 use oauth::OAuthCredentialManager;
@@ -28,6 +28,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(drive_manager.clone()))
             .service(download)
             .service(upload)
+            .service(create_shortcut)
     })
     .bind(("0.0.0.0", 8080))?
     .run()

@@ -69,10 +69,17 @@ impl DriveManager {
         upload_batch(Arc::new(self.clone()), upload_files_req).await
     }
 
-    pub async fn create_shortcut(&self, file_id: String, parent_id: String) -> Result<File, Error> {
-        Ok(create::shortcut(self.hub.clone(), file_id, parent_id)
-            .await
-            .unwrap())
+    pub async fn create_shortcut(
+        &self,
+        file_id: String,
+        parent_ids: Vec<String>,
+        custom_fields: Option<&str>,
+    ) -> Result<File, Error> {
+        Ok(
+            create::shortcut(self.hub.clone(), file_id, parent_ids, custom_fields)
+                .await
+                .unwrap(),
+        )
     }
 
     pub async fn download_file(&self, url: &str) -> Result<Vec<FileManager>> {
